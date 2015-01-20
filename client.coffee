@@ -1,8 +1,10 @@
-Plugin = require 'plugin'
+Chat = require 'chat'
 Db = require 'db'
 Dom = require 'dom'
-Chat = require 'chat'
+Event = require 'event'
+Obs = require 'obs'
 Page = require 'page'
+Plugin = require 'plugin'
 Photo = require 'photo'
 Server = require 'server'
 Time = require 'time'
@@ -30,7 +32,11 @@ renderList = !->
 		Db.admin.iterate (chat) !->
 			Ui.item !->
 				Ui.avatar Plugin.userAvatar chat.key()
-				Dom.text chat.get('name')
+				Dom.div !->
+					Dom.style Flex: 1
+					Dom.text chat.get('name')
+				if unread=Db.personal.get('unread', chat.key())
+					Ui.unread unread
 				Dom.onTap !->
 					Page.nav [chat.key()]
 		Ui.item !->
@@ -44,9 +50,17 @@ renderChat = (dataO,otherId) !->
 		fontSize: '90%'
 
 	myUserId = Plugin.userId()
+	if otherId
+		newCount = Db.personal.peek('unread', otherId)
+		if newCount
+			Server.sync 'read', otherId, !->
+				Db.personal.remove 'unread', otherId
+	else
+		Obs.peek -> Event.unread()
 
 	Chat.renderMessages
 		dataO: dataO
+		newCount: newCount || 0
 		content: (msg, num) !->
 			return if !msg.isHash()
 			byUserId = msg.get('by')
