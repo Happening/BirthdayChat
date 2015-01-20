@@ -26,7 +26,7 @@ post = (userId, msg, eventText) !->
 			text: "#{Plugin.userName()}: #{eventText}"
 			for: ['admin']
 
-		for adminId in Plugin.userIds().filter((x) -> Plugin.userIsAdmin(x))
+		for adminId in Plugin.userIds('admin')
 			Db.personal(adminId).modify 'unread', userId, (v) -> (v||0)+1
 		
 	
@@ -51,9 +51,15 @@ writeMsg = (store,msg) !->
 exports.client_discard = (userId) !->
 	Plugin.assertAdmin()
 	Db.admin.remove userId
-	for adminId in Plugin.userIds().filter((x) -> Plugin.userIsAdmin(x))
+	for adminId in Plugin.userIds('admin')
 		Db.personal(adminId).remove 'unread', userId
 
 exports.client_read = (userId) !->
 	Plugin.assertAdmin()
 	Db.personal(Plugin.userId()).remove 'unread', userId
+
+exports.client_getRead = (userId, id, cb) !->
+	Plugin.assertAdmin()
+	read = Db.personal(userId).get('maxId') - Event.getUnread(userId) >= id
+	cb.reply read
+

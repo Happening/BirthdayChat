@@ -70,7 +70,9 @@ renderChat = (dataO,otherId) !->
 				if byUserId is myUserId
 					Dom.cls 'chat-me'
 				
-				Ui.avatar Plugin.userAvatar(byUserId)
+				Ui.avatar Plugin.userAvatar(byUserId), undefined, undefined, !->
+					if otherId
+						Plugin.userInfo(byUserId)
 	
 				Dom.div !->
 					Dom.cls 'chat-content'
@@ -106,11 +108,55 @@ renderChat = (dataO,otherId) !->
 							Dom.text tr("sending")
 							Ui.dots()
 
+					Dom.onTap !->
+						msgModal otherId, msg, num
+
 	Page.setFooter !->
 		Chat.renderInput
 			dataO: dataO
 			rpcArg: otherId
 
 
+msgModal = (otherId, msg, num) !->
+	time = msg.get('time')
+	return if !time
 
+	Modal = require 'modal'
+	Form = require 'form'
+	byUserId = msg.get('by')
+
+	Modal.show false, !->
+		Dom.div !->
+			Dom.style
+				margin: '-12px'
+			Ui.item !->
+				Ui.avatar Plugin.userAvatar(byUserId)
+				Dom.div !->
+					Dom.text tr("Sent by %1", Plugin.userName(byUserId))
+					Dom.div !->
+						Dom.style fontSize: '80%'
+						Dom.text (new Date(time*1000)+'').replace(/\s[\S]+\s[\S]+$/, '')
+
+				if otherId
+					Dom.onTap !->
+						Plugin.userInfo byUserId
+
+			if !!Form.clipboard and clipboard = Form.clipboard()
+				Ui.item !->
+					Dom.text tr("Copy text")
+					Dom.onTap !->
+						clipboard(msg.get('text'))
+						require('toast').show tr("Copied to clipboard")
+						Modal.remove()
+
+			if otherId and byUserId isnt +otherId
+				read = Obs.create(null)
+				Server.send 'getRead', otherId, num, read.func()
+				Ui.item !->
+					if !read.get()?
+						Ui.spinner(24)
+					else if read.get()
+						Dom.text tr("Seen by %1", Plugin.userName(otherId))
+					else
+						Dom.text tr("Not seen by %1", Plugin.userName(otherId))
 
