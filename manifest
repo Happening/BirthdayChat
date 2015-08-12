@@ -1,5 +1,3 @@
-name: Support
-description: Chat with the admins of this happening.
-icon: personalcall
+name: Birthday Chat
+description: When someone's birthday is coming up, a chat with everybody except the birthday boy/girl is automatically created, to collaborate on picking a perfect present.
 api: 2
-store: 200

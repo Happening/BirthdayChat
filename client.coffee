@@ -1,62 +1,122 @@
 Chat = require 'chat'
+DatePicker = require 'datepicker'
 Db = require 'db'
 Dom = require 'dom'
 Event = require 'event'
+Form = require 'form'
+Icon = require 'icon'
 Obs = require 'obs'
 Page = require 'page'
-Plugin = require 'plugin'
 Photo = require 'photo'
+Plugin = require 'plugin'
 Server = require 'server'
 Time = require 'time'
 Ui = require 'ui'
 {tr} = require 'i18n'
 
-exports.render = !->
-	if Plugin.userIsAdmin() and Page.state.get(0)!='user'
-		if chatId = Page.state.get(0)
-			Page.setActions
-				icon: 'verified'
-				action: !->
-					Server.call 'discard', chatId
-					Page.back()
-			renderChat Db.admin.ref(chatId), chatId
-		else
-			renderList()
-	else
-		renderChat Db.personal.ref()
+nextDate = (day) ->
+	date = DatePicker.dayToDate(day)
+	now = new Date()
+	y = now.getFullYear()-1
+	cutOffTime = now.getTime() - 3*24*3600*1000
+	loop
+		date.setFullYear y++
+		break if date.getTime() > cutOffTime
+	0|(date.getTime() / 864e5)
 
-renderList = !->
-	Dom.text tr("You are an admin for this happening. People requesting support will show up here.")
+exports.render = !->
+	me = Plugin.userId()
+	isAdmin = Plugin.userIsAdmin() || Plugin.ownerId()==me
+	unless Db.shared.get 'birthdates', me
+		Dom.div !->
+			Dom.text tr 'Before you can start using this plugin, please input your birthdate:'
+			Dom.style marginBottom: '20px'
+		DatePicker.date
+			byYear: true
+			start: 5630
+			name: 'birthdate'
+		Form.setPageSubmit (v) !->
+			Server.sync 'setBirthdate', v.birthdate, !->
+				Db.shared.set 'birthdates', me, v.birthdate
+		return
+	
+	if (chatId=(0|Page.state.get(0))) and chatId!=me
+		renderChat Db.shared.ref('chats',chatId), chatId
+		return
+
+
 	Ui.list !->
 		Dom.style marginTop: '8px'
-		Db.admin.iterate (chat) !->
+		bds = Db.shared.get('birthdates') || {}
+		Plugin.users.observeEach (user) !->
 			Ui.item !->
-				Ui.avatar Plugin.userAvatar chat.key()
+				who = 0|user.key()
+				name = Plugin.userName who
+				bd = bds[who]
+
+				Ui.avatar Plugin.userAvatar who
 				Dom.div !->
 					Dom.style Flex: 1
-					Dom.text chat.get('name')
-				if unread=Db.personal.get('unread', chat.key())
-					Ui.unread unread
-				Dom.onTap !->
-					Page.nav [chat.key()]
-		Ui.item !->
-			Dom.style color: Plugin.colors().highlight
-			Dom.text tr("+ Request support yourself")
-			Dom.onTap !->
-				Page.nav ['user']
+					if bd
+						nd = nextDate(bd)
+						Dom.text tr("%1 becomes %2",name,Math.round((nd-bd)/365.25))
+						Dom.div !->
+							Dom.style fontSize: '80%'
+							Dom.text DatePicker.dayToString(nd)
+					else
+						Dom.text tr("%1 has no birthdate set", name)
+				if who==me
+					Dom.style opacity: 0.5
+				else
+					if unread=Db.personal.get('unread', who)
+						Ui.unread unread
+					Dom.onTap !->
+						Page.nav [who]
+				if !bd || isAdmin
+					Form.vSep()
+					Icon.render
+						data: 'edit'
+						style: {padding: '15px', marginRight: '-15px'}
+						onTap: !->
+							Modal = require 'modal'
+							newBd = bd
+							Modal.show
+								title: tr("%1's birthdate",name)
+								content: !->
+									DatePicker.date
+										value: bd
+										byYear: true
+										start: 5630
+										onChange: (v) !-> newBd = v
+								cb: (action) !->
+									if action
+										Server.sync 'setBirthdate', newBd, who, !->
+											Db.shared.set 'birthdates', who, newBd
+								buttons: [false,tr('Cancel'),true,tr('Set')]
+							,
+		, (user) ->
+			if (0|user.key())==me
+				if isAdmin
+					1000000000
+			else
+				(nextDate(bds[user.key()]) || 999999)
 
-renderChat = (dataO,otherId) !->
+
+renderChat = (dataO,aboutId) !->
+	log aboutId,'aboutId'
 	Dom.style
 		fontSize: '90%'
 
 	myUserId = Plugin.userId()
-	if otherId
-		newCount = Db.personal.peek('unread', otherId)
-		if newCount
-			Server.sync 'read', otherId, !->
-				Db.personal.remove 'unread', otherId
-	else
-		Obs.peek -> Event.unread()
+	newCount = Db.personal.peek('unread', aboutId)
+	if newCount
+		Server.sync 'read', aboutId, !->
+			Db.personal.remove 'unread', aboutId
+
+	name = Plugin.userName(aboutId)
+	Page.setTitle tr "%1's birthday",name
+	Dom.div !->
+		Dom.text tr 'These messages can be seen by everyone in the group except %1...', name
 
 	Chat.renderMessages
 		dataO: dataO
@@ -70,9 +130,10 @@ renderChat = (dataO,otherId) !->
 				if byUserId is myUserId
 					Dom.cls 'chat-me'
 				
-				Ui.avatar Plugin.userAvatar(byUserId), undefined, undefined, !->
-					if otherId
-						Plugin.userInfo(byUserId)
+				Ui.avatar Plugin.userAvatar(byUserId),
+					onTap:
+						if aboutId
+							Plugin.userInfo(byUserId)
 	
 				Dom.div !->
 					Dom.cls 'chat-content'
@@ -109,20 +170,19 @@ renderChat = (dataO,otherId) !->
 							Ui.dots()
 
 					Dom.onTap !->
-						msgModal otherId, msg, num
+						msgModal aboutId, msg, num
 
 	Page.setFooter !->
 		Chat.renderInput
 			dataO: dataO
-			rpcArg: otherId
+			rpcArg: aboutId
 
 
-msgModal = (otherId, msg, num) !->
+msgModal = (aboutId, msg, num) !->
 	time = msg.get('time')
 	return if !time
 
 	Modal = require 'modal'
-	Form = require 'form'
 	byUserId = msg.get('by')
 
 	Modal.show false, !->
@@ -137,7 +197,7 @@ msgModal = (otherId, msg, num) !->
 						Dom.style fontSize: '80%'
 						Dom.text (new Date(time*1000)+'').replace(/\s[\S]+\s[\S]+$/, '')
 
-				if otherId
+				if aboutId
 					Dom.onTap !->
 						Plugin.userInfo byUserId
 
@@ -149,14 +209,14 @@ msgModal = (otherId, msg, num) !->
 						require('toast').show tr("Copied to clipboard")
 						Modal.remove()
 
-			if otherId and byUserId isnt +otherId
+			if aboutId and byUserId isnt +aboutId
 				read = Obs.create(null)
-				Server.send 'getRead', otherId, num, read.func()
+				Server.send 'getRead', aboutId, num, read.func()
 				Ui.item !->
 					if !read.get()?
 						Ui.spinner(24)
 					else if read.get()
-						Dom.text tr("Seen by %1", Plugin.userName(otherId))
+						Dom.text tr("Seen by %1", Plugin.userName(aboutId))
 					else
-						Dom.text tr("Not seen by %1", Plugin.userName(otherId))
+						Dom.text tr("Not seen by %1", Plugin.userName(aboutId))
 
