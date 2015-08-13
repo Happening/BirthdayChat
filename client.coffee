@@ -62,7 +62,9 @@ exports.render = !->
 					Ui.avatar Plugin.userAvatar who
 					Dom.last().style "flexShrink": 0
 					Dom.div !->
-						Dom.style margin: '0px 5px'
+						Dom.style
+							margin: '0px 5px'
+							width: '100%'
 						if bd
 							nd = nextDate(bd)
 							Dom.text tr("%1 becomes %2", name, Math.round((nd-bd)/365.25))
@@ -75,10 +77,8 @@ exports.render = !->
 						Dom.style opacity: 0.5
 					else
 						Obs.observe !->
-							if unread=Db.personal.get('unread', who)
-							# unread=Event.getUnread(who)
+							if unread = (Db.shared.get('chats', who, 'maxId')|0) - (Db.personal.get('read', who)|0)
 								Ui.unread unread
-							# Event.renderBubble [who]
 						Dom.onTap !->
 							Page.nav [who]
 				if !bd || isAdmin || who is me

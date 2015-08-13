@@ -33,7 +33,13 @@ post = (aboutId, msg, eventText) !->
 	store.set 0|id/100, id%100, msg
 
 exports.client_read = (aboutId) !->
-	Db.personal(Plugin.aboutId()).remove 'unread', aboutId
+	userId = Plugin.userId()
+	log "setting read", aboutId
+	# Db.personal(Plugin.aboutId()).remove 'unread', aboutId
+	Db.personal(userId).set 'read', null
+	Db.personal(userId).set 'read', aboutId, null
+	Db.personal(userId).set 'read', aboutId, Db.shared.peek('chats', aboutId, 'maxId')|0
+	log "read:", Db.personal(userId).peek('read', aboutId)
 
 exports.client_getRead = (aboutId, id, cb) !->
 	read = Db.personal(aboutId).get('maxId') - Event.getUnread(aboutId) >= id

@@ -23,10 +23,17 @@ exports.renderChat = (aboutId) !->
 		fontSize: '90%'
 
 	myUserId = Plugin.userId()
-	newCount = Db.personal.peek('unread', aboutId)
-	if newCount
+	# if newCount
+	# 	Server.sync 'read', aboutId, !->
+	# 		Db.personal.remove 'unread', aboutId
+	#set read to max
+	newCount = 0
+	Obs.observe !->
+		maxId = (Db.shared.get('chats', aboutId, 'maxId')|0)
+		newCount = maxId - (Db.personal.peek('read', aboutId)|0)
+		log "-------------nc--------", newCount, maxId
 		Server.sync 'read', aboutId, !->
-			Db.personal.remove 'unread', aboutId
+			Db.personal.set 'read', aboutId, maxId
 
 	highlight = (text) ->
 			Dom.span !->
