@@ -34,10 +34,9 @@ post = (aboutId, msg, eventText) !->
 
 exports.client_read = (aboutId) !->
 	userId = Plugin.userId()
-	log "setting read", aboutId
 	# Db.personal(Plugin.aboutId()).remove 'unread', aboutId
-	Db.personal(userId).set 'read', null
-	Db.personal(userId).set 'read', aboutId, null
+	# Db.personal(userId).set 'read', null
+	# Db.personal(userId).set 'read', aboutId, null
 	Db.personal(userId).set 'read', aboutId, Db.shared.peek('chats', aboutId, 'maxId')|0
 	log "read:", Db.personal(userId).peek('read', aboutId)
 
