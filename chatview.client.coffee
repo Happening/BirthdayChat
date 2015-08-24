@@ -2,6 +2,7 @@ Chat = require 'chat'
 DatePicker = require 'datepicker'
 Db = require 'db'
 Dom = require 'dom'
+Event = require 'event'
 Form = require 'form'
 Obs = require 'obs'
 Page = require 'page'
@@ -41,6 +42,7 @@ exports.renderChat = (aboutId) !->
 				Dom.userText text
 
 	name = Plugin.userName(aboutId)
+	Event.showStar tr("%1's birthday", name)
 	Page.setTitle tr("%1's birthday", name)
 	Dom.section !->
 		Dom.style textAlign: 'center'

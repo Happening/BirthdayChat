@@ -1,4 +1,3 @@
-DatePicker = require 'datepicker'
 Db = require 'db'
 Dom = require 'dom'
 Event = require 'event'
@@ -13,6 +12,7 @@ Time = require 'time'
 Ui = require 'ui'
 {tr} = require 'i18n'
 ChatView = require 'chatview'
+DatePicker = require 'datepicker'
 nextDate = require('nextDate').nd
 
 exports.render = !->
@@ -104,3 +104,5 @@ exports.render = !->
 								buttons: [false,tr('Cancel'),true,tr('Set')]
 		, (user) ->
 			if bds[user.key()] then nextDate(bds[user.key()]) else 9999999
+	# Ui.bigButton "update", !->
+	# 	Server.call("update")
