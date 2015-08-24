@@ -36,7 +36,7 @@ exports.render = !->
 			Server.sync 'setBirthdate', v.birthdate, !->
 				Db.shared.set 'birthdates', me, v.birthdate
 		return
-	
+
 	if (chatId=(0|Page.state.get(0))) and chatId!=me
 		# renderChat Db.shared.ref('chats',chatId), chatId
 		ChatView.renderChat chatId

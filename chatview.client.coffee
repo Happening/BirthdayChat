@@ -63,12 +63,12 @@ exports.renderChat = (aboutId) !->
 				Dom.cls 'chat-msg'
 				if byUserId is myUserId
 					Dom.cls 'chat-me'
-				
+
 				Ui.avatar Plugin.userAvatar(byUserId),
 					onTap: !->
 						if aboutId
 							Plugin.userInfo(byUserId)
-	
+
 				Dom.div !->
 					Dom.cls 'chat-content'
 					photoKey = msg.get('photo')
@@ -82,7 +82,7 @@ exports.renderChat = (aboutId) !->
 										backgroundColor: '#444'
 									(require 'photoview').render
 										key: photoKey
-										
+
 					else if photoKey is ''
 						Dom.div !->
 							Dom.cls 'chat-nophoto'

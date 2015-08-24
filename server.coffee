@@ -3,6 +3,8 @@ Event = require 'event'
 Plugin = require 'plugin'
 {tr} = require 'i18n'
 
+exports.getTitle = !-> # prevents title input from showing up when adding the p$
+
 exports.client_chat = (text,aboutId) !->
 	log 'chat called'
 	post aboutId, {text}, text
