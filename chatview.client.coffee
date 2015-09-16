@@ -16,7 +16,7 @@ nextDate = require('nextDate').nd
 
 exports.renderChat = (aboutId) !->
 	dataO = Db.shared.ref('chats', aboutId)
-	#ensure data path exists.
+	# ensure data path exists.
 	if !dataO? or !dataO.peek()?
 		Server.call('makeDataO', aboutId)
 		dataO = Db.shared.ref('chats', aboutId)
@@ -27,7 +27,7 @@ exports.renderChat = (aboutId) !->
 	# if newCount
 	# 	Server.sync 'read', aboutId, !->
 	# 		Db.personal.remove 'unread', aboutId
-	#set read to max
+	# set read to max
 	newCount = 0
 	Obs.observe !->
 		maxId = (Db.shared.get('chats', aboutId, 'maxId')|0)

@@ -19,10 +19,10 @@ exports.render = !->
 	me = Plugin.userId()
 	isAdmin = Plugin.userIsAdmin() || Plugin.ownerId()==me
 
-#intro screen
+	# intro screen
 	unless Db.shared.get 'birthdates', me
 		Dom.section !->
-			Dom.style #center content
+			Dom.style # center content
 				margin: '0px auto'
 				maxWidth: '380px'
 			Dom.p !->
@@ -42,7 +42,7 @@ exports.render = !->
 		ChatView.renderChat chatId
 		return
 
-#list screen
+	# list screen
 	Ui.list !->
 		Dom.style marginTop: '8px'
 		bds = Db.shared.get('birthdates') || {}
@@ -76,9 +76,10 @@ exports.render = !->
 					if who is me
 						Dom.style opacity: 0.5
 					else
-						Obs.observe !->
-							if unread = (Db.shared.get('chats', who, 'maxId')|0) - (Db.personal.get('read', who)|0)
-								Ui.unread unread
+						# Obs.observe !->
+						# 	if unread = (Db.shared.get('chats', who, 'maxId')|0) - (Db.personal.get('read', who)|0)
+						# 		Ui.unread unread
+						Event.renderBubble [who]
 						Dom.onTap !->
 							Page.nav [who]
 				if !bd || isAdmin || who is me
@@ -104,5 +105,3 @@ exports.render = !->
 								buttons: [false,tr('Cancel'),true,tr('Set')]
 		, (user) ->
 			if bds[user.key()] then nextDate(bds[user.key()]) else 9999999
-	# Ui.bigButton "update", !->
-	# 	Server.call("update")
