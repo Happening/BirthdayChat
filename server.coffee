@@ -43,7 +43,16 @@ exports.client_read = (aboutId) !->
 	log "read:", Db.personal(userId).peek('read', aboutId)
 
 exports.client_getRead = (aboutId, id, cb) !->
-	read = Db.personal(aboutId).get('maxId') - Event.getUnread(aboutId) >= id
+	maxId = Db.shared.get('chats', aboutId, 'maxId')
+	byUserId = Db.shared.get 0|id/100, id%100, 'by'
+
+	read = {}
+	for userId in Plugin.userIds()
+		continue if userId is byUserId
+		readTill = Db.personal(userId).get('read', aboutId)
+		log userId, readTill
+		read[userId] = true if readTill >= id
+	log read
 	cb.reply read
 
 exports.client_setBirthdate = (bd, who) !->

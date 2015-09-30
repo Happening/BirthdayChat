@@ -148,11 +148,31 @@ msgModal = (aboutId, msg, num) !->
 
 			if aboutId and byUserId isnt +aboutId
 				read = Obs.create(null)
+				log "getRead", aboutId, num
 				Server.send 'getRead', aboutId, num, read.func()
 				Ui.item !->
 					if !read.get()?
 						Ui.spinner(24)
-					else if read.get()
-						Dom.text tr("Seen by %1", Plugin.userName(aboutId))
 					else
-						Dom.text tr("Not seen by %1", Plugin.userName(aboutId))
+						count = read.count().get()
+						if count >= Plugin.users.count().get()-1
+							Dom.text tr("Seen by all members")
+						else
+							Dom.text tr("Seen by %1 member|s", count)
+
+						Dom.onTap !->
+							Modal.show tr("Seen by"), !->
+								Dom.div !->
+									Dom.style
+										margin: '-12px'
+										maxHeight: '60%'
+										minWidth: '15em'
+									Dom.overflow()
+									read.iterate (r) !->
+										Ui.item !->
+											id = r.key()
+											Ui.avatar Plugin.userAvatar(id)
+											Dom.div Plugin.userName(id)
+											Dom.onTap !->
+												Plugin.userInfo id
+									, (r) -> +r.key()
