@@ -83,6 +83,7 @@ setTimer = (id) !->
 	firstDate.setHours(10)
 	duration = firstDate.getTime() - Plugin.time()*1000
 	log tr("setting timer to %1 (%2)", firstDate, duration)
+	Timer.cancel("onBirthdayTimer", id) # remove old
 	Timer.set(duration, "onBirthdayTimer", id)
 
 
