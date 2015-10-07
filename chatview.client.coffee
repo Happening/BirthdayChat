@@ -32,7 +32,6 @@ exports.renderChat = (aboutId) !->
 	Obs.observe !->
 		maxId = (Db.shared.get('chats', aboutId, 'maxId')|0)
 		newCount = maxId - (Db.personal.peek('read', aboutId)|0)
-		log "-------------nc--------", newCount, maxId
 		Server.sync 'read', aboutId, !->
 			Db.personal.set 'read', aboutId, maxId
 

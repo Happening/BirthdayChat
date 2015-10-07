@@ -1,16 +1,16 @@
 # DatePicker = require 'datepicker'
 
-exports.nd = (day, dayOffset = 0) ->
-	halfDay = 12*3600*1000
-	date = new Date(day*864e5 + halfDay)
+exports.nd = (day, dayOffset = 0, currentDateOffset = -3) ->
+	aDay = 864e5
+	halfDay = aDay/2
+	date = new Date(day*aDay + halfDay)
 	if dayOffset > 0
-		dayOffset = (24*3600*1000) * dayOffset
+		dayOffset =  aDay * dayOffset
 		date = new Date(date.getTime() - dayOffset)
-	# date = DatePicker.dayToDate(day)
 	now = new Date()
 	y = now.getFullYear()-1
-	cutOffTime = now.getTime() - 3*24*3600*1000 + halfDay
+	cutOffTime = now.getTime() + currentDateOffset*aDay + halfDay
 	loop
 		date.setFullYear y++
 		break if date.getTime() > cutOffTime
-	0|(date.getTime() / 864e5)
+	0|(date.getTime() / aDay)

@@ -60,46 +60,57 @@ exports.client_setBirthdate = (bd, who) !->
 	if !who || ((!Plugin.userIsAdmin() && Plugin.ownerId()!=Plugin.userId()) && Db.shared.peek('birthdates', who))
 		who = Plugin.userId()
 	Db.shared.set 'birthdates', who, bd
-	updateTime()
+	setTimer(who)
 
 exports.client_update = !->
-	updateTime()
+	log "update: ", Plugin.userId()
+	setTimer(Plugin.userId())
 
 # Master server
-exports.onBirthdayTimer = !->
-	log "RING RING! Someones birthday is in 10 days!"
-	aboutId = Db.shared.get('timer', 'id')
+exports.onBirthdayTimer = (aboutId)!->
+	log "RING RING! #{Plugin.userName(aboutId)}'s birthday is in 10 days!"
 	Event.create
 		unit: 'announcement'
 		text: tr("%1's birthday is in 10 days!", Plugin.userName(aboutId))
 		exclude: [aboutId]
-	updateTime() #and do the timer again.
+	setTimer(aboutId) #and do the timer again.
 
-updateTime = !->
-	duration = 1000
-	firstDate = 100000
-	firstId = 0
-	# for dates
-	Db.shared.iterate 'birthdates', (bde) !->
-		# check which is the first
-		bd = bde.get()
-		nd = nextDate(bd, 10)
-		log bd, "-", nd
-		if  nd > 0 and nd < firstDate
-			firstId = bde.key()
-			firstDate = nextDate(bd, 10)
-			log "firstdate", firstDate
+setTimer = (id) !->
+	bd = Db.shared.get 'birthdates', id
+	firstDate = nextDate(bd, 10, 0)
 	# set new timer
 	firstDate = new Date(firstDate*864e5)
 	firstDate.setHours(10)
 	duration = firstDate.getTime() - Plugin.time()*1000
+	log tr("setting timer to %1 (%2)", firstDate, duration)
+	Timer.set(duration, "onBirthdayTimer", id)
 
-	log tr("setting timer to %1 (%2)", new Date(firstDate), duration)
-	# write to db
-	Db.shared.set 'timer',
-		'id': parseInt firstId
-		'time': firstDate.getTime()
 
-	# cancel and redo
-	Timer.cancel('onBirthdayTimer')
-	Timer.set(duration, 'onBirthdayTimer')
+# refreshTimer = !->
+# 	duration = 1000
+# 	firstDate = 100000
+# 	firstId = 0
+# 	# for dates
+# 	Db.shared.iterate 'birthdates', (bde) !->
+# 		# check which is the first
+# 		bd = bde.get()
+# 		nd = nextDate(bd, 10)
+# 		log bd, "-", nd
+# 		if  nd > 0 and nd < firstDate
+# 			firstId = bde.key()
+# 			firstDate = nextDate(bd, 10)
+# 			log "firstdate", firstDate
+# 	# set new timer
+# 	firstDate = new Date(firstDate*864e5)
+# 	firstDate.setHours(10)
+# 	duration = firstDate.getTime() - Plugin.time()*1000
+
+# 	log tr("setting timer to %1 (%2)", new Date(firstDate), duration)
+# 	# write to db
+# 	Db.shared.set 'timer',
+# 		'id': parseInt firstId
+# 		'time': firstDate.getTime()
+
+# 	# cancel and redo
+# 	Timer.cancel('onBirthdayTimer')
+# 	Timer.set(duration, 'onBirthdayTimer')
